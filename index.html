@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emily Learning Dashboard</title>
+<style>
+  :root{
+    /* Palette pulled directly from Discovery Lab's live homepage
+       (https://educadug.github.io/discovery-lab/, engine/style.css?v=12),
+       which renders with :root, [data-theme="earth"] - "Environmental Science -
+       soil, water, air". Confirmed against the fetched stylesheet, not invented. */
+    --paper:#F2EFE6; --surface:#FBF9F3; --surface-2:#EAE6D9;
+    --ink:#1D211C; --ink-2:#4A5148; --ink-3:#757C72;
+    --line:#1D211C24; --line-strong:#1D211C40;
+    --accent:#40634C; --accent-hi:#517B5E; --accent-ink:#FBF9F3;
+    --accent-wash:#40634C14;
+    --signal:#B5551F; --signal-wash:#B5551F14;
+    --positive:#2F6B45; --caution:#A66B00;
+    --radius:14px; --radius-lg:22px;
+    --font-display:"Fraunces","Iowan Old Style",Georgia,serif;
+    --font-ui:"Public Sans",ui-sans-serif,system-ui,"Segoe UI",sans-serif;
+    --font-data:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--font-ui);background-color:var(--paper);color:var(--ink);line-height:1.55;
+    /* Faint field-notebook grid, same recipe as the Discovery Lab homepage body rule. */
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:48px 48px,48px 48px;
+    background-position:-1px -1px;
+  }
+  a{color:var(--signal);}
+  .eyebrow-label{font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--signal);display:inline-flex;align-items:center;gap:6px;}
+  .target-icon{display:inline-block;width:14px;height:14px;vertical-align:middle;color:var(--signal);}
+  .shell{max-width:920px;margin:0 auto;padding:0 20px;}
+  header.site{background:var(--surface);border-bottom:1px dashed var(--line-strong);padding:22px 0;}
+  header.site h1{font-family:var(--font-display);font-size:1.9rem;margin:0 0 4px;
+    font-variation-settings:"wght" 600;}
+  header.site p{margin:0;color:var(--ink-2);font-size:0.95rem;}
+  nav.tabs{display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border-bottom:1px dashed var(--line-strong);
+    padding:10px 0;position:sticky;top:0;z-index:5;}
+  nav.tabs .shell{display:flex;gap:8px;flex-wrap:wrap;}
+  .tab-btn{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);
+    padding:9px 14px;border-radius:999px;font:inherit;font-family:var(--font-data);
+    text-transform:uppercase;letter-spacing:.04em;font-weight:700;font-size:0.78rem;cursor:pointer;}
+  .tab-btn.active{background:var(--signal);color:var(--accent-ink);border-color:var(--signal);}
+  main{padding:26px 0 60px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  h2.panel-title{font-family:var(--font-display);font-size:1.5rem;margin:0 0 6px;}
+  .panel-sub{color:var(--ink-2);margin:0 0 20px;font-size:0.95rem;max-width:64ch;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:18px 20px;margin-bottom:16px;}
+  .card + .card{border-top:1px dashed var(--line-strong);}
+  .card h3{margin:0 0 8px;font-size:1.05rem;font-family:var(--font-display);}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:var(--radius);padding:14px 16px;}
+  .stat .num{font-family:var(--font-data);font-size:1.6rem;font-weight:700;color:var(--accent);}
+  .stat .label{font-size:0.8rem;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em;}
+  .focus-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+  .focus-card{border-radius:var(--radius);padding:16px;border:1px solid var(--line);}
+  .focus-card.win{border-left:4px solid var(--positive);background:#2F6B4508;}
+  .focus-card.tonight{border-left:4px solid var(--signal);background:var(--signal-wash);}
+  .focus-card.edge{border-left:4px solid var(--caution);background:#A66B0010;}
+  .focus-card .eyebrow{font-family:var(--font-data);font-size:.72rem;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--ink-2);margin-bottom:6px;}
+  .quote-card{border-left:3px solid var(--accent);padding:12px 16px;margin-bottom:10px;background:var(--surface);
+    border-radius:var(--radius);}
+  .quote-card blockquote{margin:0 0 6px;font-family:var(--font-display);font-size:1.05rem;font-style:italic;color:var(--ink);}
+  .quote-card .interp{font-size:0.85rem;color:var(--ink-2);}
+  .pill{display:inline-block;font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;
+    letter-spacing:.06em;padding:3px 10px;border-radius:999px;border:1px solid var(--line-strong);color:var(--ink-2);
+    background:var(--surface-2);margin-right:6px;}
+  .pill.stage-Emerging{color:#A66B00;border-color:#A66B0055;background:#A66B0014;}
+  .pill.stage-Developing{color:#B5551F;border-color:#B5551F55;background:#B5551F14;}
+  .pill.stage-Growing{color:#517B5E;border-color:#517B5E55;background:#517B5E14;}
+  .pill.stage-Secure{color:#2F6B45;border-color:#2F6B4555;background:#2F6B4514;}
+  .chart-card svg{width:100%;height:auto;display:block;}
+  .chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:0.82rem;color:var(--ink-2);}
+  .legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+  .evidence-pop{display:none;margin-top:10px;padding:10px 12px;border-radius:var(--radius);
+    background:var(--surface-2);font-size:0.86rem;color:var(--ink-2);}
+  .evidence-pop.show{display:block;}
+  .milestone{display:flex;gap:12px;margin-bottom:14px;}
+  .milestone .dot{width:10px;height:10px;border-radius:50%;background:var(--signal);flex:0 0 auto;margin-top:6px;}
+  .milestone .date{font-family:var(--font-data);font-size:0.78rem;color:var(--ink-3);}
+  .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .profile-grid .item{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;}
+  .profile-grid .item .k{font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;color:var(--ink-2);
+    margin-bottom:4px;}
+  .basis-note{font-size:0.8rem;color:var(--ink-3);margin-top:6px;}
+  ul.plain{margin:0;padding-left:18px;}
+  ul.plain li{margin-bottom:6px;}
+  details.session{border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px;background:var(--surface);}
+  details.session summary{padding:12px 16px;cursor:pointer;font-weight:700;list-style:none;font-family:var(--font-display);}
+  details.session summary::-webkit-details-marker{display:none;}
+  details.session summary .sdate{font-family:var(--font-data);font-size:0.78rem;color:var(--ink-2);
+    font-weight:400;display:block;text-transform:uppercase;letter-spacing:.04em;}
+  details.session .session-body{padding:0 16px 16px;border-top:1px dashed var(--line-strong);}
+  details.session .session-body h4{font-size:0.85rem;margin:14px 0 6px;color:var(--ink-2);text-transform:uppercase;
+    letter-spacing:.03em;}
+  .resource-link{display:block;margin-bottom:8px;}
+  .resource-link a{font-weight:700;word-break:break-word;}
+  .resource-link .note{font-size:0.85rem;color:var(--ink-2);}
+  .about-portrait-row{display:flex;gap:18px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .btn-linkedin{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--accent-ink);
+    padding:10px 16px;border-radius:999px;text-decoration:none;font-weight:700;font-size:0.9rem;}
+  .about-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;margin-bottom:22px;}
+  .about-photo-wrap{position:relative;width:168px;height:168px;margin:6px 0 8px;display:flex;align-items:center;justify-content:center;}
+  .about-photo-wrap::before{content:"";position:absolute;inset:-22px;border-radius:50%;
+    background:radial-gradient(circle,#40634C55 0%,#40634C22 40%,transparent 72%);}
+  .about-photo-wrap::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--accent-hi);opacity:.65;}
+  .about-photo{position:relative;width:168px;height:168px;border-radius:50%;object-fit:cover;
+    border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line-strong);z-index:1;}
+  .about-heading{font-family:var(--font-display);font-size:1.9rem;margin:2px 0 0;font-variation-settings:"wght" 600;}
+  .about-subheading{color:var(--ink-2);max-width:52ch;margin:0;font-size:0.98rem;}
+  .about-chip-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 4px;}
+  .about-chip{font-family:var(--font-data);font-size:0.72rem;text-transform:uppercase;letter-spacing:.05em;
+    padding:5px 12px;border-radius:999px;border:1px solid var(--line-strong);color:var(--ink-2);background:var(--surface-2);}
+  .about-closing h3{margin:0 0 6px;font-family:var(--font-display);font-size:1.1rem;}
+  footer.disclaimer{border-top:1px solid var(--line);margin-top:24px;padding-top:16px;font-size:0.8rem;color:var(--ink-3);}
+  @media (max-width:640px){
+    .stat-row,.focus-row,.profile-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="shell">
+    <h1>Emily's Learning Dashboard</h1>
+    <p>A voluntary, supplementary learning resource from Mr. Guevara. Please refer to Canvas / the Learning Lab for grades, deadlines and official progress reports.</p>
+  </div>
+</header>
+<nav class="tabs">
+  <div class="shell">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="progress">Progress</button>
+    <button class="tab-btn" data-tab="helpathome">Help at Home</button>
+    <button class="tab-btn" data-tab="sessions">Sessions</button>
+    <button class="tab-btn" data-tab="about">About</button>
+  </div>
+</nav>
+<main class="shell">
+
+  <section class="panel active" id="tab-overview"></section>
+  <section class="panel" id="tab-progress"></section>
+  <section class="panel" id="tab-helpathome"></section>
+  <section class="panel" id="tab-sessions"></section>
+  <section class="panel" id="tab-about"></section>
+
+</main>
+
+<script id="dashboard-v2-data" type="application/json">{
+  "student_first_name": "Emily",
+  "programme": "Primary-2 Science",
+  "canvas_note": "Please refer to Canvas for quantitative information such as grades, deadlines, submitted work, and formal assessment data.",
+  "dashboard_purpose_note": "This dashboard is a voluntary teaching resource created by Mr. Guevara to show the student's longer-term learning journey, recurring patterns, and next steps across lessons.",
+  "professional_observation_note": "The learning notes in this dashboard are Mr. Guevara's professional observations based on lessons. They are not fixed labels, diagnoses, grades, or formal assessment results.",
+  "stats": {
+    "sessions_logged": 2,
+    "distinct_skills_tried": 17,
+    "milestones_hit": 2
+  },
+  "skill_threads": {
+    "Science Content Knowledge": [
+      {
+        "session_date_iso": "2026-05-04",
+        "session_date": "4 May 2026",
+        "lesson_title": "Meteors Nebulae Stars",
+        "stage": "Emerging",
+        "evidence": "Connected star nurseries to nebulae and explained several space ideas confidently aloud."
+      },
+      {
+        "session_date_iso": "2026-05-20",
+        "session_date": "20 May 2026",
+        "lesson_title": "Sun Seasons Rotation",
+        "stage": "Emerging",
+        "evidence": "Used prior knowledge to connect Earth's axis with seasons and questioned AI search results instead of accepting them straight away."
+      }
+    ],
+    "Science Independent Reasoning": [
+      {
+        "session_date_iso": "2026-05-04",
+        "session_date": "4 May 2026",
+        "lesson_title": "Meteors Nebulae Stars",
+        "stage": "Emerging",
+        "evidence": "Emily has strong curiosity and recall in space science, with accuracy now depending on slowing down before answering."
+      },
+      {
+        "session_date_iso": "2026-05-20",
+        "session_date": "20 May 2026",
+        "lesson_title": "Sun Seasons Rotation",
+        "stage": "Emerging",
+        "evidence": "Emily's curiosity is a major strength, and her next growth step is converting quick spoken ideas into careful labelled diagrams and short accurate explanations."
+      }
+    ]
+  },
+  "milestones": [
+    {
+      "session_date": "4 May 2026",
+      "session_date_iso": "2026-05-04",
+      "title": "Meteors Nebulae Stars",
+      "detail": "Connected star nurseries to nebulae and explained several space ideas confidently aloud."
+    },
+    {
+      "session_date": "20 May 2026",
+      "session_date_iso": "2026-05-20",
+      "title": "Sun Seasons Rotation",
+      "detail": "Used prior knowledge to connect Earth's axis with seasons and questioned AI search results instead of accepting them straight away."
+    }
+  ],
+  "learning_profile": {
+    "based_on_sessions": 2,
+    "engages_best_when": "",
+    "responds_well_to": "Emily was energetic, curious, talkative, and keen to teach as well as learn. She responded well when her own ideas were used as bridges into the science.",
+    "often_curious_about": "Emily was keen to share what she knew about life under Antarctic ice, zero-gravity planes, reflected moonlight, blue stars, and screen-sharing tricks.",
+    "currently_trying": "Slow down enough to make explanations precise."
+  },
+  "voice_quotes": [
+    {
+      "quote": "Emily was keen to share what she knew about life under Antarctic ice, zero-gravity planes, reflected moonlight, blue stars, and screen-sharing tricks.",
+      "session_date": "20 May 2026",
+      "lesson_title": "Sun Seasons Rotation"
+    },
+    {
+      "quote": "Emily showed interest in asteroid discovery, NASA missions, star nurseries, and interactive Mars exploration.",
+      "session_date": "4 May 2026",
+      "lesson_title": "Meteors Nebulae Stars"
+    }
+  ],
+  "sessions": [
+    {
+      "session_date": "20 May 2026",
+      "session_date_iso": "2026-05-20",
+      "lesson_title": "Sun Seasons Rotation",
+      "summary": "Emily began the Sun, seasons, and tides module by exploring the Sun, Earth's rotation, Earth's orbit, leap years, day and night, axial tilt, and the reason seasons happen. She also brought in an advanced question about zero-gravity planes and microgravity.",
+      "aim": "To understand that Earth's rotation causes day and night, Earth's revolution around the Sun gives us a year, and Earth's 23.5 degree axial tilt causes seasons by changing the angle and intensity of sunlight in each hemisphere.",
+      "headline_insight": "Emily's curiosity is a major strength, and her next growth step is converting quick spoken ideas into careful labelled diagrams and short accurate explanations.",
+      "current_focus": "Earth-Sun movement and precise explanations",
+      "big_win": "Used prior knowledge to connect Earth's axis with seasons and questioned AI search results instead of accepting them straight away.",
+      "next_priority": "Write one accurate sentence from each diagram so her explanation precision matches her scientific curiosity.",
+      "engagement_status": "Highly curious and ready for stretch",
+      "why_this_matters": "These ideas prepare Emily for later work on forces, gravity, planetary motion, seasons, climate patterns, and scientific models.",
+      "progress_since_last_update": [
+        "Moved from space-object vocabulary into Earth-Sun system explanations.",
+        "Connected Earth's tilt with seasons and remembered several advanced Sun facts.",
+        "Brought independent research habits into the lesson by questioning AI-generated search information."
+      ],
+      "home_support": [
+        "Ask Emily to explain why New Zealand and Europe can have opposite seasons.",
+        "Invite Emily to draw Earth with a tilted axis and label the day side and night side.",
+        "Encourage Emily to pause after drawing and write one careful sentence explaining the diagram."
+      ],
+      "student_voice": "Emily was keen to share what she knew about life under Antarctic ice, zero-gravity planes, reflected moonlight, blue stars, and screen-sharing tricks.",
+      "indicators": {
+        "Earth-Sun models": "Introduced",
+        "Scientific curiosity": "Growing",
+        "Diagram explanation": "Practised",
+        "Careful source checking": "Seen recently",
+        "Written precision": "Developing"
+      },
+      "upcoming_focus": [
+        "Use labelled diagrams to explain Earth's rotation and orbit.",
+        "Write precise one-sentence explanations for seasons, leap years, and day/night.",
+        "Keep using curiosity-led questions while checking the science carefully."
+      ],
+      "strengths": [
+        "Brings outside science knowledge into lessons with enthusiasm.",
+        "Uses drawings, examples, and screen sharing to explain thinking.",
+        "Questions information and recognises that AI overviews need checking."
+      ],
+      "areas_for_growth": [
+        "Slow down enough to make explanations precise.",
+        "Separate similar ideas clearly, such as rotation and revolution.",
+        "Use the correct model for weightlessness: gravity is still acting, but everything falls together."
+      ],
+      "next_steps": [
+        "Draw Earth's tilted axis and write one clear sentence explaining seasons.",
+        "Create a two-column table comparing rotation and revolution.",
+        "Write one How might scientists question about a space experiment or technology."
+      ],
+      "skills_observed": [
+        "Scientific explanation",
+        "Critical thinking",
+        "Diagram use",
+        "Independent questioning",
+        "Source checking",
+        "Problem solving"
+      ],
+      "engagement": "Emily was energetic, curious, talkative, and keen to teach as well as learn. She responded well when her own ideas were used as bridges into the science.",
+      "extension_task": "Create a one-page illustrated explainer called Four ways Earth moves and why they matter, covering rotation, revolution, axial tilt, and free fall.",
+      "next_step_learning_plan": "Use short diagrams first, then convert each diagram into one accurate sentence. This will help Emily keep her curiosity while improving precision.",
+      "what_your_child_is_building_toward": "Emily is building the ability to think like a young scientist by questioning information, checking sources, using models, and explaining how evidence connects to real-world phenomena.",
+      "resources": [
+        {
+          "title": "NASA Space Place - What Causes the Seasons?",
+          "url": "https://spaceplace.nasa.gov/seasons/en/",
+          "note": "Review how Earth's tilt changes the angle and intensity of sunlight in each hemisphere."
+        },
+        {
+          "title": "NASA Space Place - What Is a Leap Year?",
+          "url": "https://spaceplace.nasa.gov/leap-year/sp/",
+          "note": "Revisit why 365.25 days matters and how calendars handle the extra quarter day."
+        },
+        {
+          "title": "NASA Space Place - All About the Sun",
+          "url": "https://spaceplace.nasa.gov/all-about-the-sun/en/",
+          "note": "Review the Sun's size, role, and importance in the solar system."
+        },
+        {
+          "title": "NASA - Parabolic Flight",
+          "url": "https://www.nasa.gov/mission/parabolic-flight/",
+          "note": "Explore Emily's question about zero-gravity planes and why people feel weightless for a short time."
+        }
+      ],
+      "independence_patterns": [],
+      "misconceptions": [],
+      "communication_patterns": [],
+      "student_glows": [],
+      "accuracy_patterns": [],
+      "vocabulary_patterns": [],
+      "confidence_patterns": [],
+      "reasoning_patterns": [],
+      "successful_strategies": [],
+      "skills_focus": [],
+      "participation_patterns": [],
+      "student_grows": [],
+      "additional_notes": "",
+      "current_unit": "",
+      "student_pacing": "",
+      "lesson_engagement": "",
+      "assignments_outstanding": [],
+      "dashboard_subject": "Science",
+      "skills": [
+        {
+          "evidence": "Brings outside science knowledge into lessons with enthusiasm.",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Uses drawings, examples, and screen sharing to explain thinking.",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Questions information and recognises that AI overviews need checking.",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Scientific explanation",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "Critical thinking",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "Diagram use",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "Independent questioning",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "Source checking",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "Problem solving",
+          "source_field": "skills_observed"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Slow down enough to make explanations precise.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Separate similar ideas clearly, such as rotation and revolution.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Use the correct model for weightlessness: gravity is still acting, but everything falls together.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Write one accurate sentence from each diagram so her explanation precision matches her scientific curiosity.",
+          "source_field": "next_priority"
+        }
+      ],
+      "raw_session": {
+        "session_date": "20 May 2026",
+        "session_date_iso": "2026-05-20",
+        "lesson_title": "Sun Seasons Rotation",
+        "summary": "Emily began the Sun, seasons, and tides module by exploring the Sun, Earth's rotation, Earth's orbit, leap years, day and night, axial tilt, and the reason seasons happen. She also brought in an advanced question about zero-gravity planes and microgravity.",
+        "aim": "To understand that Earth's rotation causes day and night, Earth's revolution around the Sun gives us a year, and Earth's 23.5 degree axial tilt causes seasons by changing the angle and intensity of sunlight in each hemisphere.",
+        "headline_insight": "Emily's curiosity is a major strength, and her next growth step is converting quick spoken ideas into careful labelled diagrams and short accurate explanations.",
+        "current_focus": "Earth-Sun movement and precise explanations",
+        "big_win": "Used prior knowledge to connect Earth's axis with seasons and questioned AI search results instead of accepting them straight away.",
+        "next_priority": "Write one accurate sentence from each diagram so her explanation precision matches her scientific curiosity.",
+        "engagement_status": "Highly curious and ready for stretch",
+        "why_this_matters": "These ideas prepare Emily for later work on forces, gravity, planetary motion, seasons, climate patterns, and scientific models.",
+        "progress_since_last_update": [
+          "Moved from space-object vocabulary into Earth-Sun system explanations.",
+          "Connected Earth's tilt with seasons and remembered several advanced Sun facts.",
+          "Brought independent research habits into the lesson by questioning AI-generated search information."
+        ],
+        "home_support": [
+          "Ask Emily to explain why New Zealand and Europe can have opposite seasons.",
+          "Invite Emily to draw Earth with a tilted axis and label the day side and night side.",
+          "Encourage Emily to pause after drawing and write one careful sentence explaining the diagram."
+        ],
+        "student_voice": "Emily was keen to share what she knew about life under Antarctic ice, zero-gravity planes, reflected moonlight, blue stars, and screen-sharing tricks.",
+        "indicators": {
+          "Earth-Sun models": "Introduced",
+          "Scientific curiosity": "Growing",
+          "Diagram explanation": "Practised",
+          "Careful source checking": "Seen recently",
+          "Written precision": "Developing"
+        },
+        "upcoming_focus": [
+          "Use labelled diagrams to explain Earth's rotation and orbit.",
+          "Write precise one-sentence explanations for seasons, leap years, and day/night.",
+          "Keep using curiosity-led questions while checking the science carefully."
+        ],
+        "strengths": [
+          "Brings outside science knowledge into lessons with enthusiasm.",
+          "Uses drawings, examples, and screen sharing to explain thinking.",
+          "Questions information and recognises that AI overviews need checking."
+        ],
+        "areas_for_growth": [
+          "Slow down enough to make explanations precise.",
+          "Separate similar ideas clearly, such as rotation and revolution.",
+          "Use the correct model for weightlessness: gravity is still acting, but everything falls together."
+        ],
+        "next_steps": [
+          "Draw Earth's tilted axis and write one clear sentence explaining seasons.",
+          "Create a two-column table comparing rotation and revolution.",
+          "Write one How might scientists question about a space experiment or technology."
+        ],
+        "skills_observed": [
+          "Scientific explanation",
+          "Critical thinking",
+          "Diagram use",
+          "Independent questioning",
+          "Source checking",
+          "Problem solving"
+        ],
+        "engagement": "Emily was energetic, curious, talkative, and keen to teach as well as learn. She responded well when her own ideas were used as bridges into the science.",
+        "extension_task": "Create a one-page illustrated explainer called Four ways Earth moves and why they matter, covering rotation, revolution, axial tilt, and free fall.",
+        "next_step_learning_plan": "Use short diagrams first, then convert each diagram into one accurate sentence. This will help Emily keep her curiosity while improving precision.",
+        "what_your_child_is_building_toward": "Emily is building the ability to think like a young scientist by questioning information, checking sources, using models, and explaining how evidence connects to real-world phenomena.",
+        "resources": [
+          {
+            "title": "NASA Space Place - What Causes the Seasons?",
+            "url": "https://spaceplace.nasa.gov/seasons/en/",
+            "note": "Review how Earth's tilt changes the angle and intensity of sunlight in each hemisphere."
+          },
+          {
+            "title": "NASA Space Place - What Is a Leap Year?",
+            "url": "https://spaceplace.nasa.gov/leap-year/sp/",
+            "note": "Revisit why 365.25 days matters and how calendars handle the extra quarter day."
+          },
+          {
+            "title": "NASA Space Place - All About the Sun",
+            "url": "https://spaceplace.nasa.gov/all-about-the-sun/en/",
+            "note": "Review the Sun's size, role, and importance in the solar system."
+          },
+          {
+            "title": "NASA - Parabolic Flight",
+            "url": "https://www.nasa.gov/mission/parabolic-flight/",
+            "note": "Explore Emily's question about zero-gravity planes and why people feel weightless for a short time."
+          }
+        ],
+        "independence_patterns": [],
+        "misconceptions": [],
+        "communication_patterns": [],
+        "student_glows": [],
+        "accuracy_patterns": [],
+        "vocabulary_patterns": [],
+        "confidence_patterns": [],
+        "reasoning_patterns": [],
+        "successful_strategies": [],
+        "skills_focus": [],
+        "participation_patterns": [],
+        "student_grows": [],
+        "additional_notes": "",
+        "current_unit": "",
+        "student_pacing": "",
+        "lesson_engagement": "",
+        "assignments_outstanding": [],
+        "dashboard_subject": "Science"
+      }
+    },
+    {
+      "session_date": "4 May 2026",
+      "session_date_iso": "2026-05-04",
+      "lesson_title": "Meteors Nebulae Stars",
+      "summary": "Emily explored asteroids, comets, meteoroids, meteors, meteorites, atmospheric re-entry, star colour, nebulae, and star formation through discussion, video, Canvas practice, Kahoot, and NASA simulations.",
+      "aim": "To explain the differences between common space objects, understand why meteors and spacecraft glow during atmospheric entry, and describe how stars form in nebulae.",
+      "headline_insight": "Emily has strong curiosity and recall in space science, with accuracy now depending on slowing down before answering.",
+      "current_focus": "Space vocabulary and careful quiz reading",
+      "big_win": "Connected star nurseries to nebulae and explained several space ideas confidently aloud.",
+      "next_priority": "Protect accuracy by reading each question fully before clicking.",
+      "engagement_status": "Highly curious and energetic",
+      "why_this_matters": "Careful reading helps Emily turn her strong curiosity and fast recall into more reliable scientific answers.",
+      "progress_since_last_update": [
+        "Used prior knowledge about asteroids, comets, and planetary defence to enter the lesson confidently.",
+        "Connected atmospheric re-entry to meteor heating and spacecraft heat shields.",
+        "Showed strong recall of star colour, temperature, hydrogen, and nebulae during Canvas practice."
+      ],
+      "home_support": [
+        "Ask Emily to explain the difference between meteoroid, meteor, and meteorite using one object changing place.",
+        "Invite Emily to describe why blue stars are hotter than red stars in one clear sentence.",
+        "Encourage Emily to pause for two seconds before answering online quiz questions."
+      ],
+      "student_voice": "Emily showed interest in asteroid discovery, NASA missions, star nurseries, and interactive Mars exploration.",
+      "indicators": {
+        "Space vocabulary": "Growing",
+        "Scientific curiosity": "Growing",
+        "Careful reading": "Developing",
+        "Independent exploration": "Growing"
+      },
+      "upcoming_focus": [
+        "Use precise space vocabulary in short written explanations.",
+        "Read quiz questions fully before answering.",
+        "Turn curiosity-led questions into clear scientific investigation questions."
+      ],
+      "strengths": [
+        "Brought strong prior knowledge and enthusiasm into the discussion.",
+        "Asked practical questions about spacecraft recovery, splashdown, heat shields, and safety.",
+        "Worked quickly through star colour and nebula ideas during the Canvas activity."
+      ],
+      "areas_for_growth": [
+        "Slow down during timed or competitive quizzes to avoid avoidable misclicks.",
+        "Write fuller explanations that show the cause behind each science idea.",
+        "Keep separating similar vocabulary terms such as meteoroid, meteor, and meteorite."
+      ],
+      "next_steps": [
+        "Make a three-row table comparing meteoroid, meteor, and meteorite.",
+        "Write one short cause-and-effect paragraph about atmospheric entry heating.",
+        "Write one curiosity-led How might question about nebulae or asteroids."
+      ],
+      "skills_observed": [
+        "Scientific vocabulary",
+        "Critical thinking",
+        "Problem solving",
+        "Independent exploration",
+        "Careful reading"
+      ],
+      "engagement": "Emily was energetic, highly curious, and motivated by challenge, especially during the Kahoot and NASA simulation parts of the lesson.",
+      "resources": [
+        {
+          "title": "NASA Space Place - Asteroid or Meteor: What's the Difference?",
+          "url": "https://spaceplace.nasa.gov/asteroid-or-meteor/en/",
+          "note": "Review the names for space rocks and practise explaining the three meteor words aloud."
+        },
+        {
+          "title": "NASA Space Place - What Is a Nebula?",
+          "url": "https://spaceplace.nasa.gov/nebula/en/",
+          "note": "Use this to revisit why nebulae can be called star nurseries."
+        },
+        {
+          "title": "NASA Eyes",
+          "url": "https://science.nasa.gov/eyes/",
+          "note": "Explore space missions and objects visually, then choose one thing to explain in your own words."
+        }
+      ],
+      "independence_patterns": [],
+      "misconceptions": [],
+      "communication_patterns": [],
+      "student_glows": [],
+      "accuracy_patterns": [],
+      "vocabulary_patterns": [],
+      "confidence_patterns": [],
+      "reasoning_patterns": [],
+      "successful_strategies": [],
+      "skills_focus": [],
+      "participation_patterns": [],
+      "student_grows": [],
+      "additional_notes": "",
+      "current_unit": "",
+      "student_pacing": "",
+      "lesson_engagement": "",
+      "assignments_outstanding": [],
+      "dashboard_subject": "Science",
+      "skills": [
+        {
+          "evidence": "Brought strong prior knowledge and enthusiasm into the discussion.",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Asked practical questions about spacecraft recovery, splashdown, heat shields, and safety.",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Worked quickly through star colour and nebula ideas during the Canvas activity.",
+          "source_field": "strengths"
+        },
+        {
+          "evidence": "Scientific vocabulary",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "Critical thinking",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "Problem solving",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "Independent exploration",
+          "source_field": "skills_observed"
+        },
+        {
+          "evidence": "Careful reading",
+          "source_field": "skills_observed"
+        }
+      ],
+      "growing_next": [
+        {
+          "evidence": "Slow down during timed or competitive quizzes to avoid avoidable misclicks.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Write fuller explanations that show the cause behind each science idea.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Keep separating similar vocabulary terms such as meteoroid, meteor, and meteorite.",
+          "source_field": "areas_for_growth"
+        },
+        {
+          "evidence": "Protect accuracy by reading each question fully before clicking.",
+          "source_field": "next_priority"
+        }
+      ],
+      "raw_session": {
+        "session_date": "4 May 2026",
+        "session_date_iso": "2026-05-04",
+        "lesson_title": "Meteors Nebulae Stars",
+        "summary": "Emily explored asteroids, comets, meteoroids, meteors, meteorites, atmospheric re-entry, star colour, nebulae, and star formation through discussion, video, Canvas practice, Kahoot, and NASA simulations.",
+        "aim": "To explain the differences between common space objects, understand why meteors and spacecraft glow during atmospheric entry, and describe how stars form in nebulae.",
+        "headline_insight": "Emily has strong curiosity and recall in space science, with accuracy now depending on slowing down before answering.",
+        "current_focus": "Space vocabulary and careful quiz reading",
+        "big_win": "Connected star nurseries to nebulae and explained several space ideas confidently aloud.",
+        "next_priority": "Protect accuracy by reading each question fully before clicking.",
+        "engagement_status": "Highly curious and energetic",
+        "why_this_matters": "Careful reading helps Emily turn her strong curiosity and fast recall into more reliable scientific answers.",
+        "progress_since_last_update": [
+          "Used prior knowledge about asteroids, comets, and planetary defence to enter the lesson confidently.",
+          "Connected atmospheric re-entry to meteor heating and spacecraft heat shields.",
+          "Showed strong recall of star colour, temperature, hydrogen, and nebulae during Canvas practice."
+        ],
+        "home_support": [
+          "Ask Emily to explain the difference between meteoroid, meteor, and meteorite using one object changing place.",
+          "Invite Emily to describe why blue stars are hotter than red stars in one clear sentence.",
+          "Encourage Emily to pause for two seconds before answering online quiz questions."
+        ],
+        "student_voice": "Emily showed interest in asteroid discovery, NASA missions, star nurseries, and interactive Mars exploration.",
+        "indicators": {
+          "Space vocabulary": "Growing",
+          "Scientific curiosity": "Growing",
+          "Careful reading": "Developing",
+          "Independent exploration": "Growing"
+        },
+        "upcoming_focus": [
+          "Use precise space vocabulary in short written explanations.",
+          "Read quiz questions fully before answering.",
+          "Turn curiosity-led questions into clear scientific investigation questions."
+        ],
+        "strengths": [
+          "Brought strong prior knowledge and enthusiasm into the discussion.",
+          "Asked practical questions about spacecraft recovery, splashdown, heat shields, and safety.",
+          "Worked quickly through star colour and nebula ideas during the Canvas activity."
+        ],
+        "areas_for_growth": [
+          "Slow down during timed or competitive quizzes to avoid avoidable misclicks.",
+          "Write fuller explanations that show the cause behind each science idea.",
+          "Keep separating similar vocabulary terms such as meteoroid, meteor, and meteorite."
+        ],
+        "next_steps": [
+          "Make a three-row table comparing meteoroid, meteor, and meteorite.",
+          "Write one short cause-and-effect paragraph about atmospheric entry heating.",
+          "Write one curiosity-led How might question about nebulae or asteroids."
+        ],
+        "skills_observed": [
+          "Scientific vocabulary",
+          "Critical thinking",
+          "Problem solving",
+          "Independent exploration",
+          "Careful reading"
+        ],
+        "engagement": "Emily was energetic, highly curious, and motivated by challenge, especially during the Kahoot and NASA simulation parts of the lesson.",
+        "resources": [
+          {
+            "title": "NASA Space Place - Asteroid or Meteor: What's the Difference?",
+            "url": "https://spaceplace.nasa.gov/asteroid-or-meteor/en/",
+            "note": "Review the names for space rocks and practise explaining the three meteor words aloud."
+          },
+          {
+            "title": "NASA Space Place - What Is a Nebula?",
+            "url": "https://spaceplace.nasa.gov/nebula/en/",
+            "note": "Use this to revisit why nebulae can be called star nurseries."
+          },
+          {
+            "title": "NASA Eyes",
+            "url": "https://science.nasa.gov/eyes/",
+            "note": "Explore space missions and objects visually, then choose one thing to explain in your own words."
+          }
+        ],
+        "independence_patterns": [],
+        "misconceptions": [],
+        "communication_patterns": [],
+        "student_glows": [],
+        "accuracy_patterns": [],
+        "vocabulary_patterns": [],
+        "confidence_patterns": [],
+        "reasoning_patterns": [],
+        "successful_strategies": [],
+        "skills_focus": [],
+        "participation_patterns": [],
+        "student_grows": [],
+        "additional_notes": "",
+        "current_unit": "",
+        "student_pacing": "",
+        "lesson_engagement": "",
+        "assignments_outstanding": [],
+        "dashboard_subject": "Science"
+      }
+    }
+  ]
+}</script>
+<script>
+const DISCLAIMER = "This is a voluntary teaching resource created by Mr. Guevara to add as much value as possible for families and students. It is not a requirement of Crimson Global Academy, and other teachers may not provide anything similar — this is not part of what CGA officially offers. Please refer to the Learning Lab as the official Crimson Global Academy resource, where assignments, grades, deadlines, and formal progress reports are provided. The information here is supplementary and is not part of any official session report or progress report sent by the school.";
+
+const LINKEDIN_URL = "https://www.linkedin.com/in/diego-urrutia-guevara-150bb641/";
+
+const data = JSON.parse(document.getElementById('dashboard-v2-data').textContent);
+const name = data.student_first_name || "the student";
+
+function esc(s){
+  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function footerHtml(){
+  return `<footer class="disclaimer">${esc(DISCLAIMER)}</footer>`;
+}
+
+const TARGET_ICON = `<svg class="target-icon" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="4" opacity=".35"/>
+  <circle cx="32" cy="32" r="15" fill="none" stroke="currentColor" stroke-width="4" opacity=".55"/>
+  <circle cx="32" cy="32" r="4" fill="currentColor"/>
+</svg>`;
+
+function eyebrow(label){
+  return `<div class="eyebrow-label">${TARGET_ICON}${esc(label)}</div>`;
+}
+
+/* ---------------- OVERVIEW TAB ---------------- */
+function renderOverview(){
+  const s = data.stats || {};
+  const latest = data.sessions[0] || {};
+  const quotes = data.voice_quotes || [];
+
+  let html = `
+    ${eyebrow("Overview")}
+    <h2 class="panel-title">Overview</h2>
+    <p class="panel-sub">A quick snapshot of ${esc(name)}'s learning journey so far.</p>
+    <div class="stat-row">
+      <div class="stat"><div class="num">${s.sessions_logged ?? 0}</div><div class="label">Sessions logged</div></div>
+      <div class="stat"><div class="num">${s.distinct_skills_tried ?? 0}</div><div class="label">Distinct skills tried</div></div>
+      <div class="stat"><div class="num">${s.milestones_hit ?? 0}</div><div class="label">Milestones hit</div></div>
+    </div>
+    <div class="focus-row">
+      <div class="focus-card win"><div class="eyebrow">Big win</div>${esc(latest.big_win || "")}</div>
+      <div class="focus-card tonight"><div class="eyebrow">Try tonight</div>${esc((latest.home_support && latest.home_support[0]) || "")}</div>
+      <div class="focus-card edge"><div class="eyebrow">Growing edge</div>${esc((latest.growing_next && latest.growing_next[0] && latest.growing_next[0].evidence) || "")}</div>
+    </div>
+    <div class="card">
+      <h3>Since we last looked</h3>
+      <p>${esc(latest.raw_session && latest.raw_session.progress_since_last_update && Array.isArray(latest.raw_session.progress_since_last_update) ? latest.raw_session.progress_since_last_update[0] : (latest.raw_session ? latest.raw_session.progress_since_last_update : "") || "")}</p>
+    </div>
+    <div class="card">
+      <h3>What this lesson was about</h3>
+      <p>${esc(latest.family_friendly_science_explanation || latest.summary || "")}</p>
+    </div>
+    <div class="card">
+      <h3>In ${esc(name)}'s own words</h3>
+      ${quotes.map(q => `
+        <div class="quote-card">
+          <blockquote>&ldquo;${esc(q.quote)}&rdquo;</blockquote>
+          <div class="interp">From "${esc(q.lesson_title)}" (${esc(q.session_date)}) — this shows ${esc(name)} thinking in his own terms, not just repeating a definition.</div>
+        </div>`).join("")}
+    </div>
+  `;
+  document.getElementById('tab-overview').innerHTML = html + footerHtml();
+}
+
+/* ---------------- PROGRESS TAB (chart) ---------------- */
+const STAGE_Y = {Emerging: 3, Developing: 2, Growing: 1, Secure: 0};
+// Line colours pulled from the Discovery Lab "earth" theme's accent/signal
+// family (greens and rust-orange), so threads read as one palette with the
+// rest of the dashboard rather than an unrelated colour set.
+const STAGE_COLORS = {
+  "Hardware & software vocabulary": "#40634C",
+  "Independent research & problem solving": "#517B5E",
+  "Programming & coding": "#B5551F",
+  "Digital safety & responsible use": "#A66B00",
+};
+const LINE_COL = "#1D211C24";
+const INK2 = "#4A5148";
+const INK3 = "#757C72";
+
+function shortDate(iso){
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-GB", {day:"numeric", month:"short"});
+}
+
+function buildChartSVG(threads){
+  const W = 780, H = 300, padL = 140, padR = 20, padT = 20, padB = 46;
+  const allDates = [...new Set(Object.values(threads).flat().map(p => p.session_date_iso))].sort();
+  const x = d => {
+    const idx = allDates.indexOf(d);
+    const n = Math.max(allDates.length - 1, 1);
+    return padL + (idx / n) * (W - padL - padR);
+  };
+  const rowH = (H - padT - padB) / 4;
+  const y = stage => padT + STAGE_Y[stage] * rowH + rowH / 2;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-ui),sans-serif">`;
+
+  // Stage rows: qualitative stage NAMES are the only y-axis labels, never numbers.
+  ["Emerging","Developing","Growing","Secure"].forEach((stage, i) => {
+    const yy = padT + i * rowH + rowH / 2;
+    svg += `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="${LINE_COL}" stroke-width="1" stroke-dasharray="3 5"/>`;
+    svg += `<text x="8" y="${yy + 4}" font-size="12" fill="${INK2}" font-weight="700">${stage}</text>`;
+  });
+
+  // Dated x-axis: a step line under the plot with a dashed tick per session date.
+  const axisY = padT + 4 * rowH;
+  svg += `<line x1="${padL}" y1="${axisY}" x2="${W - padR}" y2="${axisY}" stroke="${LINE_COL}" stroke-width="1"/>`;
+  allDates.forEach(d => {
+    const px = x(d);
+    svg += `<line x1="${px}" y1="${axisY}" x2="${px}" y2="${axisY + 6}" stroke="${LINE_COL}" stroke-width="1" stroke-dasharray="2 3"/>`;
+    svg += `<text x="${px}" y="${axisY + 22}" font-size="10" fill="${INK3}" text-anchor="middle" transform="rotate(0 ${px} ${axisY+22})" font-family="var(--font-data),monospace">${shortDate(d)}</text>`;
+  });
+
+  let pointId = 0;
+  const points = [];
+  Object.entries(threads).forEach(([threadName, pts]) => {
+    const color = STAGE_COLORS[threadName] || "#40634C";
+    const sorted = [...pts].sort((a,b) => a.session_date_iso.localeCompare(b.session_date_iso));
+    // Step line (not a smooth diagonal): holds the current stage until the
+    // next dated observation, which better reflects a qualitative plateau.
+    let path = "";
+    sorted.forEach((p, i) => {
+      const px = x(p.session_date_iso), py = y(p.stage);
+      if (i === 0) { path += `M${px},${py} `; }
+      else {
+        const prevPx = x(sorted[i-1].session_date_iso);
+        path += `L${px},${y(sorted[i-1].stage)} L${px},${py} `;
+      }
+    });
+    svg += `<path d="${path.trim()}" fill="none" stroke="${color}" stroke-width="2.5" opacity="0.85"/>`;
+    sorted.forEach(p => {
+      const px = x(p.session_date_iso), py = y(p.stage);
+      const id = "pt" + (pointId++);
+      points.push({id, threadName, ...p});
+      svg += `<circle cx="${px}" cy="${py}" r="5" fill="${color}" stroke="${'#FBF9F3'}" stroke-width="1.5" style="cursor:pointer" onclick="showEvidence('${id}')"/>`;
+    });
+  });
+  svg += `</svg>`;
+  window.__chartPoints = points;
+  return svg;
+}
+
+function showEvidence(id){
+  const p = (window.__chartPoints || []).find(pt => pt.id === id);
+  const el = document.getElementById('evidence-pop');
+  if (!el || !p) return;
+  el.innerHTML = `<strong>${esc(p.threadName)} — ${esc(p.stage)}</strong> (${esc(p.session_date)}, "${esc(p.lesson_title)}")<br>${esc(p.evidence)}`;
+  el.classList.add('show');
+  el.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+function renderProgress(){
+  const threads = data.skill_threads || {};
+  const lp = data.learning_profile || {};
+  const milestones = data.milestones || [];
+
+  let legend = Object.keys(threads).map(k =>
+    `<span><span class="legend-dot" style="background:${STAGE_COLORS[k] || '#2F5871'}"></span>${esc(k)}</span>`
+  ).join(" &nbsp; ");
+
+  let html = `
+    ${eyebrow("Progress")}
+    <h2 class="panel-title">Progress</h2>
+    <p class="panel-sub">These are Mr. Guevara's qualitative professional observations from lessons, not a score or grade. Click any point on the chart for the evidence it is drawn from.</p>
+    <div class="card chart-card">
+      <h3>Skills over time (qualitative stages)</h3>
+      ${buildChartSVG(threads)}
+      <div class="chart-legend">${legend}</div>
+      <div id="evidence-pop" class="evidence-pop"></div>
+    </div>
+    <div class="card">
+      <h3>Moments that mattered</h3>
+      ${milestones.map(m => `
+        <div class="milestone">
+          <div class="dot"></div>
+          <div>
+            <div class="date">${esc(m.session_date)}</div>
+            <strong>${esc(m.title)}</strong>
+            <div>${esc(m.detail)}</div>
+          </div>
+        </div>`).join("")}
+    </div>
+    <div class="card">
+      <h3>Early learning profile</h3>
+      <div class="basis-note">Based on ${lp.based_on_sessions ?? 0} sessions so far — this will keep evolving as more sessions are logged.</div>
+      <div class="profile-grid" style="margin-top:10px;">
+        <div class="item"><div class="k">Engages best when</div>${esc(lp.engages_best_when || "")}</div>
+        <div class="item"><div class="k">Responds well to</div>${esc(lp.responds_well_to || "")}</div>
+        <div class="item"><div class="k">Often curious about</div>${esc(lp.often_curious_about || "")}</div>
+        <div class="item"><div class="k">Currently trying</div>${esc(lp.currently_trying || "")}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('tab-progress').innerHTML = html + footerHtml();
+}
+
+/* ---------------- HELP AT HOME TAB ---------------- */
+function renderHelpAtHome(){
+  const latest = data.sessions[0] || {};
+  const askQuestions = (latest.raw_session && latest.raw_session.next_steps) || [];
+  let html = `
+    ${eyebrow("Help at Home")}
+    <h2 class="panel-title">Help at Home</h2>
+    <p class="panel-sub">This is optional and conversational, not homework — a few ideas if a moment naturally comes up at home.</p>
+    <div class="card">
+      <h3>Ask ${esc(name)}</h3>
+      <ul class="plain">
+        ${askQuestions.slice(0,3).map(q => `<li>${esc(q)}</li>`).join("")}
+      </ul>
+    </div>
+    <div class="card">
+      <h3>This week's home-support idea</h3>
+      <ul class="plain">${(latest.home_support || []).map(h => `<li>${esc(h)}</li>`).join("")}</ul>
+    </div>
+    <div class="card">
+      <h3>Resources from the latest session</h3>
+      ${(latest.resources || []).map(r => `
+        <div class="resource-link">
+          <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>
+          <div class="note">${esc(r.note)}</div>
+        </div>`).join("")}
+    </div>
+  `;
+  document.getElementById('tab-helpathome').innerHTML = html + footerHtml();
+}
+
+/* ---------------- SESSIONS TAB ---------------- */
+function renderSessions(){
+  const sessions = data.sessions || [];
+  let html = `
+    ${eyebrow("Sessions")}
+    <h2 class="panel-title">Sessions</h2>
+    <p class="panel-sub">Full chronological session history, newest first. Click any session to expand it.</p>
+  `;
+  sessions.forEach(s => {
+    html += `
+      <details class="session">
+        <summary>${esc(s.lesson_title)}<span class="sdate">${esc(s.session_date)}</span></summary>
+        <div class="session-body">
+          <h4>Summary</h4><p>${esc(s.summary)}</p>
+          <h4>Strengths / glows</h4>
+          <ul class="plain">${(s.skills || []).map(sk => `<li>${esc(sk.evidence)}</li>`).join("")}</ul>
+          <h4>Growing next</h4>
+          <ul class="plain">${(s.growing_next || []).map(g => `<li>${esc(g.evidence)}</li>`).join("")}</ul>
+          <h4>Resources</h4>
+          ${(s.resources || []).map(r => `<div class="resource-link"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a><div class="note">${esc(r.note)}</div></div>`).join("")}
+        </div>
+      </details>
+    `;
+  });
+  document.getElementById('tab-sessions').innerHTML = html + footerHtml();
+}
+
+/* ---------------- ABOUT TAB ---------------- */
+function renderAbout(){
+  const chips = ["Primary &amp; Secondary","IGCSE &middot; A-Level &middot; US Diploma","UK &middot; Spain &middot; New Zealand","Students on 4 continents","Teacher training"];
+  const html = `
+    ${eyebrow("About")}
+    <h2 class="panel-title">About Mr. Guevara</h2>
+    <p class="panel-sub">The teacher behind this dashboard.</p>
+    <div class="card about-hero">
+      ${eyebrow("The teacher behind this dashboard")}
+      <div class="about-photo-wrap">
+        <img class="about-photo" src="https://educadug.github.io/discovery-lab/about/diego.jpg?v=2" alt="Diego Urrutia Guevara" loading="lazy">
+      </div>
+      <h3 class="about-heading">Diego Urrutia Guevara</h3>
+      <p class="about-subheading">Studied in Norway, Spain and New Zealand. Taught in the UK, Spain and New Zealand. Now teaching students across four continents.</p>
+      <div class="about-chip-row">${chips.map(c => `<span class="about-chip">${c}</span>`).join("")}</div>
+      <a class="btn-linkedin" href="${esc(LINKEDIN_URL)}" target="_blank" rel="noopener noreferrer">Connect on LinkedIn</a>
+    </div>
+    <div class="card">
+      <h3>About Diego</h3>
+      <p>Diego's classroom has never had one nationality in it. He studied in Norway, Spain and New Zealand, taught in both private and state schools in the United Kingdom and Spain, and now teaches from New Zealand to students in Europe, the United States, Japan, China, Southeast Asia and Australia.</p>
+      <p>That range is not a travel list — it is the substance of how he teaches. Students arrive from different school systems, different languages and very different ideas of what a good answer looks like. Teaching all of them well means building lessons around thinking rather than around the habits of any single curriculum.</p>
+      <p>Before and alongside education, Diego worked in international consultancy and biodiversity. He believes students learn best when knowledge is connected to real problems, investigation, decision-making and the world beyond the classroom.</p>
+      <p>Running through all of it is a particular interest in the thoughtful use of technology and AI in education. Discovery Lab is where that becomes something you can click: simulations and investigations where students experiment, decide, test ideas and learn by doing.</p>
+    </div>
+    <div class="card about-closing">
+      <h3>Full background and experience</h3>
+      <p>Qualifications, teaching history and professional work are all on LinkedIn. Connect there, or get in touch.</p>
+      <a class="btn-linkedin" href="${esc(LINKEDIN_URL)}" target="_blank" rel="noopener noreferrer">View LinkedIn profile</a>
+    </div>
+  `;
+  document.getElementById('tab-about').innerHTML = html + footerHtml();
+}
+
+renderOverview();
+renderProgress();
+renderHelpAtHome();
+renderSessions();
+renderAbout();
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
