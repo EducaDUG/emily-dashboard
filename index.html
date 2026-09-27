@@ -162,27 +162,11 @@
   "professional_observation_note": "The learning notes in this dashboard are Mr. Guevara's professional observations based on lessons. They are not fixed labels, diagnoses, grades, or formal assessment results.",
   "stats": {
     "sessions_logged": 2,
-    "distinct_skills_tried": 17,
+    "distinct_skills_tried": 2,
     "milestones_hit": 2
   },
   "skill_threads": {
-    "Science Content Knowledge": [
-      {
-        "session_date_iso": "2026-05-04",
-        "session_date": "4 May 2026",
-        "lesson_title": "Meteors Nebulae Stars",
-        "stage": "Emerging",
-        "evidence": "Connected star nurseries to nebulae and explained several space ideas confidently aloud."
-      },
-      {
-        "session_date_iso": "2026-05-20",
-        "session_date": "20 May 2026",
-        "lesson_title": "Sun Seasons Rotation",
-        "stage": "Emerging",
-        "evidence": "Used prior knowledge to connect Earth's axis with seasons and questioned AI search results instead of accepting them straight away."
-      }
-    ],
-    "Science Independent Reasoning": [
+    "Initiative and self-direction": [
       {
         "session_date_iso": "2026-05-04",
         "session_date": "4 May 2026",
@@ -196,6 +180,15 @@
         "lesson_title": "Sun Seasons Rotation",
         "stage": "Emerging",
         "evidence": "Emily's curiosity is a major strength, and her next growth step is converting quick spoken ideas into careful labelled diagrams and short accurate explanations."
+      }
+    ],
+    "Communication": [
+      {
+        "session_date_iso": "2026-05-04",
+        "session_date": "4 May 2026",
+        "lesson_title": "Meteors Nebulae Stars",
+        "stage": "Emerging",
+        "evidence": "Connected star nurseries to nebulae and explained several space ideas confidently aloud."
       }
     ]
   },
@@ -783,10 +776,18 @@ function joinProse(arr){
 
 /* Renders any field that might be a plain string, a real array, or the
    Python-repr-list-as-string bug as clean prose text (HTML-escaped). */
+/* Capitalizes the first letter of a joined/flowing sentence without
+   touching the rest of the string (so mid-sentence proper nouns etc. are
+   left alone). Safe to call on an already-capitalized or empty string. */
+function capitalizeFirst(s){
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function proseField(v){
   const asArray = toArrayOfStrings(v);
-  if (asArray !== null) return esc(joinProse(asArray));
-  return esc(v || "");
+  if (asArray !== null) return capitalizeFirst(esc(joinProse(asArray)));
+  return capitalizeFirst(esc(v || ""));
 }
 
 function footerHtml(){
@@ -983,8 +984,7 @@ function renderProgress(){
         </div>`).join("")}
     </div>
     <div class="card">
-      <h3>Early learning profile</h3>
-      <div class="basis-note">Based on ${lp.based_on_sessions ?? 0} sessions so far — this will keep evolving as more sessions are logged.</div>
+      <h3>Learning profile</h3>
       <div class="profile-grid" style="margin-top:10px;">
         ${[
           ["Engages best when", lp.engages_best_when],
